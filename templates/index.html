@@ -1,0 +1,226 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        <script type="text/javascript" src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ion-rangeslider/2.1.4/js/ion.rangeSlider.min.js"></script>
+        <script type="text/javascript" charset="utf-8">
+            $(document).ready(function(){
+                var socket = io.connect('http://' + document.domain + ':' + location.port);
+                var $range = $("#js-range-slider"),
+                $result = $(".js-result"),
+                $getvalues = $(".js-get-values"),
+
+                from = 0,
+                to = 50;
+
+                // the socket.io documentation recommends sending an explicit package upon connection
+                socket.on('connect', function() {
+                    socket.emit('my event', {data: 'I\'m connected!'});
+                });
+
+
+                $('input.sync').on('input', function(event) {
+                    socket.emit('value changed', {who: $(this).attr('id'), data: $(this).val()});
+                    //socket.emit('value changed', {who: $(this).attr('id'), data: data});
+                    console.log("whosah: " + $(this).attr('id'));
+                    console.log("datars: " + $(this).val());
+                    return false;
+                });
+
+                var saveResult = function (data) {
+                    from = data.from;
+                    to = data.to;
+                };
+
+                var writeResult = function () {
+                    var result = "from: " + from + ", to: " + to;
+                    $result.html(result);
+                };
+
+                $range.ionRangeSlider({
+                    type: "int",
+                    min: 0,
+                    max: 143,
+                    step: 1,
+                    from: from,
+                    to: to,
+                    onStart: function (data) {
+                        saveResult(data);
+                        writeResult();
+                        console.log("start");
+                    },
+                    onChange: function (data) {
+                        /*
+                        console.log($range.val());
+                        //console.log({who: $(this).attr('id'), data: $(this).val()});
+                        socket.emit('value changed', {who: $range.attr('id'), data: $range.val()});
+                        saveResult(data);
+                        */
+                        console.log("change");
+                    },
+                    onFinish: function (data) {
+                        socket.emit('value changed', {who: $range.attr('id'), data: $range.val()});
+                        saveResult(data);
+                        console.log("finish");
+                        /*
+                        console.log($range.val());
+                        //console.log({who: $(this).attr('id'), data: $(this).val()});
+                        socket.emit('value changed', {who: $range.attr('id'), data: $range.val()});
+                        */
+                    }
+                });
+
+                var sliderData = $range.data("ionRangeSlider");
+
+                socket.on('update value', function(msg) {
+                    //saveResult(msg.data);
+                    sliderData.update({
+                        from : msg.data.from,
+                        to : msg.data.to
+                    });
+                    console.log("who: " + msg.who);
+                    console.log("data (from): " + from);
+                    console.log("data (to): " + to);
+                    if(msg.who == "js-range-slider") {
+                        console.log("tchyeah!");
+                        //console.log("echo" + msg.data);
+                        //console.log("to: " + to);
+                        //console.log("from: " + from);
+                        saveResult(msg.data);
+                    }
+                    else {
+                        $('input#'+msg.who).val(msg.data);
+                        //console.log($("#js-range-slider").val())
+                        //saveResult;
+                    }
+                });
+
+                $getvalues.on("click", writeResult);
+
+                /*
+                var $range = $(".js-range-slider"),
+                $result = $(".js-result"),
+                $getvalues = $(".js-get-values"),
+
+                from = 0,
+                to = 0;
+
+                var saveResult = function (data) {
+                    from = data.from;
+                    to = data.to;
+                };
+
+                var writeResult = function () {
+                    var result = "from: " + from + ", to: " + to;
+                    $result.html(result);
+                };
+
+                // load LED strip selector slider
+                $("#example_id").ionRangeSlider({
+                    hide_min_max: true,
+                    keyboard: true,
+                    min: 0,
+                    max: 143,
+                    from: from,
+                    to: to,
+                    type: 'int',
+                    step: 1,
+                    //prefix: "$",
+                    grid: true,
+                    onStart: function(data) {
+                        saveResult(data);
+                        writeResult();
+                    },
+                    onChange: saveResult,
+                    onFinish: saveResult
+                });
+
+                $getvalues.on("click", writeResult);
+                */
+            });
+        </script>
+        <script type="text/javascript" charset="utf-8">
+
+            // copied from http://www.w3schools.com/colors/colors_picker.asp
+            function clickColor(hex, seltop, selleft, html5) {
+                var c, cObj, colormap, areas, i, areacolor, cc;
+                if (html5 && html5 == 5)  {
+                    c = document.getElementById("html5colorpicker").value;
+                } else {
+                    if (hex == 0)  {
+                        c = document.getElementById("entercolor").value;
+                    } else {
+                        c = hex;
+                    }
+                }
+                cObj = w3color(c);
+                colorhex = cObj.toHexString();
+                if (cObj.valid) {
+                    clearWrongInput();
+                } else {
+                    wrongInput();
+                    return;
+                }
+                r = cObj.red;
+                g = cObj.green;
+                b = cObj.blue;
+                document.getElementById("colornamDIV").innerHTML = (cObj.toName() || "");
+                document.getElementById("colorhexDIV").innerHTML = cObj.toHexString();
+                document.getElementById("colorrgbDIV").innerHTML = cObj.toRgbString();
+                document.getElementById("colorhslDIV").innerHTML = cObj.toHslString();
+                if ((!seltop || seltop == -1) && (!selleft || selleft == -1)) {
+                    colormap = document.getElementById("colormap");
+                    areas = colormap.getElementsByTagName("AREA");
+                    for (i = 0; i < areas.length; i++) {
+                        areacolor = areas[i].getAttribute("onmouseover").replace('mouseOverColor("', '');
+                        areacolor = areacolor.replace('")', '');
+                        if (areacolor.toLowerCase() == colorhex) {
+                            cc = areas[i].getAttribute("onclick").replace(')', '').split(",");
+                            seltop = Number(cc[1]);
+                            selleft = Number(cc[2]);
+                        }
+                    }
+                }
+                if ((seltop+200)>-1 && selleft>-1) {
+                    document.getElementById("selectedhexagon").style.top=seltop + "px";
+                    document.getElementById("selectedhexagon").style.left=selleft + "px";
+                    document.getElementById("selectedhexagon").style.visibility="visible";
+                } else {
+                    document.getElementById("divpreview").style.backgroundColor = cObj.toHexString();
+                    document.getElementById("selectedhexagon").style.visibility = "hidden";
+                }
+                document.getElementById("selectedcolor").style.backgroundColor = cObj.toHexString();
+                document.getElementById("html5colorpicker").value = cObj.toHexString();
+                document.getElementById('slideRed').value = r;
+                document.getElementById('slideGreen').value = g;
+                document.getElementById('slideBlue').value = b;
+                changeRed(r);changeGreen(g);changeBlue(b);
+                changeColor();
+                document.getElementById("fixed").style.backgroundColor = cObj.toHexString();
+            }
+        </script>
+        <!--
+        <script type="text/javascript" charset="utf-8">
+            $("#example_slider").ionRangeSlider();
+        </script>
+        -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ion-rangeslider/2.1.4/css/ion.rangeSlider.min.css"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ion-rangeslider/2.1.4/css/ion.rangeSlider.skinFlat.min.css"/>
+    </head>
+    <body>
+        <h1>sssssly-ders</h1>
+
+        <input id="slider1" class="sync" type="range" min="0" max="50" value="{{slider1}}"/><br/>
+        <input id="slider2" class="sync" type="range" min="0" max="50" value="{{slider2}}"/><br/>
+        <input id="txt1" class="sync" type="text" value="{{txt1}}" />
+        <input id="html5colorpicker" class="sync" type="color" onchange="clickColor(0, -1, -1, 5)" value="{{html5colorpicker}}" style="width:85%;" /><br/>
+        <input id="js-range-slider" class="sync" type="text" value="" />
+        <div class="extra-controls">
+            <button class="js-get-values">Get Slider Values</button>
+            <div class="result">
+                Result: <span class="js-result"></span>
+            </div>
+        </div>
+    </body>
+</html>
